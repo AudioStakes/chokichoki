@@ -1,0 +1,1504 @@
+<!doctype html>
+<!--
+Throwaway UI prototype: three radically different layouts for the textless
+paper-cutting app, switchable via ?variant= on a single static route.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>ちょきちょきおりがみ prototype</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f3ee;
+      --bg-alt: #ece7df;
+      --ink: #23303d;
+      --muted: color-mix(in oklab, var(--ink), #ffffff 62%);
+      --line: color-mix(in oklab, var(--ink), #ffffff 84%);
+      --panel: color-mix(in oklab, #ffffff, var(--bg) 30%);
+      --shadow: 0 20px 55px rgba(26, 37, 48, 0.16);
+      --shadow-soft: 0 12px 30px rgba(26, 37, 48, 0.12);
+      --paper-1: #aee3f6;
+      --paper-2: #9fd5ea;
+      --paper-edge: #7bb9d4;
+      --paper-back: #d6eff8;
+      --accent: #3f7ee8;
+      --accent-2: #f76f8e;
+      --good: #44b070;
+      --warn: #f0bf4e;
+      --ring: #4f87ff;
+      --hole: #ffffff;
+      --chip: color-mix(in oklab, #ffffff, var(--paper-1) 25%);
+      --speed: 220ms;
+      --paper-size: min(72vw, 46vh);
+      --paper-max: 30rem;
+      --bar-bg: color-mix(in oklab, #ffffff, var(--bg) 10%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11161f;
+        --bg-alt: #171d28;
+        --ink: #eef2f8;
+        --muted: color-mix(in oklab, var(--ink), #000 40%);
+        --line: color-mix(in oklab, var(--ink), #000 80%);
+        --panel: color-mix(in oklab, #1c2430, #ffffff 8%);
+        --shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+        --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.3);
+        --paper-1: #89d0ee;
+        --paper-2: #7ac2df;
+        --paper-edge: #4f8ea7;
+        --paper-back: #a4d7ea;
+        --chip: color-mix(in oklab, #ffffff, var(--paper-1) 10%);
+        --bar-bg: color-mix(in oklab, #151b25, #ffffff 4%);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-block-size: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,0.84), transparent 24%),
+        radial-gradient(circle at 82% 10%, rgba(255,255,255,0.52), transparent 18%),
+        radial-gradient(circle at 50% 110%, rgba(255,255,255,0.56), transparent 30%),
+        linear-gradient(180deg, var(--bg), var(--bg-alt));
+      color: var(--ink);
+      font-family:
+        "Avenir Next",
+        "SF Pro Display",
+        "Segoe UI",
+        system-ui,
+        sans-serif;
+    }
+
+    body {
+      min-block-size: 100dvb;
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: relative;
+      min-block-size: 100dvb;
+      padding:
+        max(1rem, env(safe-area-inset-top))
+        max(1rem, env(safe-area-inset-right))
+        calc(10rem + env(safe-area-inset-bottom))
+        max(1rem, env(safe-area-inset-left));
+      isolation: isolate;
+    }
+
+    .decor {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(18px);
+      opacity: 0.7;
+      transform: translate3d(0, 0, 0);
+      animation: float 12s ease-in-out infinite;
+    }
+
+    .blob.one {
+      inset-block-start: 8%;
+      inset-inline-start: -6%;
+      inline-size: 16rem;
+      block-size: 16rem;
+      background: rgba(173, 228, 246, 0.56);
+    }
+
+    .blob.two {
+      inset-block-start: 54%;
+      inset-inline-end: -7%;
+      inline-size: 20rem;
+      block-size: 20rem;
+      animation-delay: -4s;
+      background: rgba(247, 111, 142, 0.18);
+    }
+
+    .blob.three {
+      inset-block-end: 4%;
+      inset-inline-start: 15%;
+      inline-size: 12rem;
+      block-size: 12rem;
+      animation-delay: -8s;
+      background: rgba(68, 176, 112, 0.15);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.04); }
+    }
+
+    .variant-shell {
+      min-block-size: calc(100dvb - 8rem);
+    }
+
+    .variant-a,
+    .variant-b,
+    .variant-c {
+      min-block-size: calc(100dvb - 8rem);
+    }
+
+    .hero-stack {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(1rem, 2vw, 1.5rem);
+      min-block-size: calc(100dvb - 8rem);
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      border-radius: 1.2rem;
+      background: color-mix(in oklab, var(--panel), transparent 6%);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(10px);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-block-size: 2rem;
+      padding-inline: 0.75rem;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--chip), transparent 18%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 10%);
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+    }
+
+    .status-dot {
+      inline-size: 0.65rem;
+      block-size: 0.65rem;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    .status-pill[data-on="true"] .status-dot {
+      opacity: 1;
+      box-shadow: 0 0 0 0.3rem color-mix(in oklab, currentColor, transparent 82%);
+    }
+
+    .status-pill[data-tone="paper"] { color: #176b8d; }
+    .status-pill[data-tone="good"] { color: #26784a; }
+    .status-pill[data-tone="warm"] { color: #9b6b07; }
+    .status-pill[data-tone="ink"] { color: var(--ink); }
+
+    .scene {
+      display: grid;
+      place-items: center;
+      position: relative;
+      min-block-size: 0;
+    }
+
+    .paper-stage {
+      position: relative;
+      inline-size: min(var(--paper-size), var(--paper-max));
+      aspect-ratio: 1;
+      filter: drop-shadow(var(--shadow));
+      transform: translateZ(0);
+    }
+
+    .paper-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 2rem;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.55), transparent 34%),
+        linear-gradient(180deg, color-mix(in oklab, var(--paper-1), #ffffff 5%), var(--paper-2));
+      box-shadow:
+        inset 0 0 0 1px color-mix(in oklab, var(--paper-edge), transparent 38%),
+        inset 0 0 0 0.7rem color-mix(in oklab, var(--paper-back), transparent 44%);
+    }
+
+    .paper-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 2rem;
+      background:
+        radial-gradient(circle at 24% 18%, rgba(255,255,255,0.55), transparent 14%),
+        radial-gradient(circle at 70% 78%, rgba(0,0,0,0.08), transparent 16%);
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+
+    .paper-frame {
+      position: absolute;
+      inset: 0;
+      border-radius: 2rem;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.26);
+    }
+
+    .fold-layer,
+    .fold-back {
+      position: absolute;
+      inset: 0;
+      border-radius: 2rem;
+    }
+
+    .fold-layer {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.28), transparent 28%),
+        linear-gradient(90deg, transparent 0 48.8%, rgba(255,255,255,0.4) 49.2% 50.8%, transparent 51.2% 100%),
+        linear-gradient(180deg, color-mix(in oklab, var(--paper-1), #ffffff 6%), var(--paper-2));
+      clip-path: inset(0 round 2rem);
+    }
+
+    .fold-back {
+      transform: scale(0.96) translateY(0.7rem);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.15), transparent 30%),
+        linear-gradient(180deg, color-mix(in oklab, var(--paper-back), #ffffff 6%), color-mix(in oklab, var(--paper-back), #7db4cc 18%));
+      opacity: 0.72;
+      filter: blur(0.4px);
+    }
+
+    .crease {
+      position: absolute;
+      inset: 14% auto auto 50%;
+      transform: translateX(-50%);
+      inline-size: 0.2rem;
+      block-size: 72%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.72), transparent);
+      opacity: 0.7;
+    }
+
+    .crease.horizontal {
+      inset: 50% auto auto 14%;
+      inline-size: 72%;
+      block-size: 0.2rem;
+      transform: translateY(-50%);
+    }
+
+    .holes {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .hole {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--hole);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.9),
+        inset 0 0 0 1px rgba(0,0,0,0.05);
+      transform: translate(-50%, -50%);
+      transition: inset-inline-start var(--speed) ease, inset-block-start var(--speed) ease, transform var(--speed) ease, opacity var(--speed) ease;
+    }
+
+    .hole.shape-triangle {
+      border-radius: 0.4rem;
+      clip-path: polygon(50% 6%, 97% 92%, 3% 92%);
+    }
+
+    .hole.shape-square {
+      border-radius: 0.6rem;
+    }
+
+    .hole.shape-heart {
+      clip-path: path("M50 91 C35 79 4 54 4 31 C4 15 16 4 30 4 C39 4 46 9 50 16 C54 9 61 4 70 4 C84 4 96 15 96 31 C96 54 65 79 50 91 Z");
+    }
+
+    .hole.shape-star {
+      clip-path: polygon(50% 2%, 61% 34%, 96% 35%, 68% 55%, 79% 89%, 50% 69%, 21% 89%, 32% 55%, 4% 35%, 39% 34%);
+    }
+
+    .paper-note {
+      position: absolute;
+      inset-inline: 50%;
+      inset-block-end: -1.25rem;
+      transform: translateX(-50%);
+      display: inline-flex;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--panel), transparent 12%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      box-shadow: var(--shadow-soft);
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .paper-note .mini-dot {
+      inline-size: 0.5rem;
+      block-size: 0.5rem;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .tool-dock,
+    .tool-rail,
+    .orbit-tools {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .tool-dock {
+      justify-content: center;
+      padding: 1rem;
+      border-radius: 1.6rem;
+      background: color-mix(in oklab, var(--panel), transparent 10%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .tool-rail {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 1rem;
+      border-radius: 1.6rem;
+      background: color-mix(in oklab, var(--panel), transparent 6%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      min-inline-size: 10rem;
+    }
+
+    .orbit-tools {
+      justify-content: center;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .orbit-tools .icon-button {
+      pointer-events: auto;
+      position: absolute;
+    }
+
+    .orbit-tools .shape-strip {
+      position: absolute;
+      inset-inline: 50%;
+      inset-block-end: 0.5rem;
+      transform: translateX(-50%);
+      background: color-mix(in oklab, var(--panel), transparent 12%);
+      border-radius: 1.3rem;
+      padding: 0.5rem 0.65rem;
+      box-shadow: var(--shadow);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      pointer-events: auto;
+    }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: 3.1rem;
+      min-block-size: 3.1rem;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffffff, color-mix(in oklab, #ffffff, var(--bg) 14%));
+      color: var(--ink);
+      box-shadow: 0 8px 20px rgba(18, 25, 33, 0.08);
+      cursor: pointer;
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, opacity var(--speed) ease, background var(--speed) ease;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .icon-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(18, 25, 33, 0.14);
+    }
+
+    .icon-button:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .icon-button:focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 3px;
+    }
+
+    .icon-button[aria-pressed="true"] {
+      transform: scale(1.08);
+      box-shadow: 0 12px 28px color-mix(in oklab, var(--accent), transparent 82%);
+    }
+
+    .icon-button[disabled] {
+      opacity: 0.16;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .button-icon {
+      position: relative;
+      inline-size: 1.3rem;
+      block-size: 1.3rem;
+      display: inline-block;
+    }
+
+    .button-icon.fold {
+      background:
+        linear-gradient(135deg, transparent 0 40%, currentColor 41% 59%, transparent 60%),
+        linear-gradient(45deg, transparent 0 40%, currentColor 41% 59%, transparent 60%);
+      transform: rotate(45deg);
+      opacity: 0.9;
+    }
+
+    .button-icon.open {
+      background:
+        linear-gradient(135deg, transparent 0 43%, currentColor 44% 56%, transparent 57%),
+        linear-gradient(-135deg, transparent 0 43%, currentColor 44% 56%, transparent 57%);
+      transform: rotate(45deg);
+      opacity: 0.9;
+    }
+
+    .button-icon.new {
+      background:
+        linear-gradient(currentColor, currentColor) center / 1.2rem 0.14rem no-repeat,
+        linear-gradient(currentColor, currentColor) center / 0.14rem 1.2rem no-repeat;
+    }
+
+    .button-icon.palette {
+      border-radius: 50%;
+      background:
+        conic-gradient(
+          from 210deg,
+          #f86d8f,
+          #f6c34d,
+          #83d46c,
+          #46b7e8,
+          #9573f6,
+          #f86d8f
+        );
+      box-shadow: inset 0 0 0 0.18rem rgba(255,255,255,0.8);
+    }
+
+    .button-icon.sound,
+    .button-icon.sound-off {
+      background: linear-gradient(currentColor, currentColor) 0.28rem 0.56rem / 0.8rem 0.18rem no-repeat;
+      clip-path: polygon(0 44%, 22% 44%, 52% 20%, 52% 80%, 22% 56%, 0 56%);
+    }
+
+    .button-icon.sound-off::after {
+      content: "";
+      position: absolute;
+      inset: 0.1rem 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, transparent 46%, currentColor 47% 53%, transparent 54%);
+      opacity: 0.9;
+    }
+
+    .shape-strip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .shape-button {
+      min-inline-size: 3rem;
+      min-block-size: 3rem;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffffff, color-mix(in oklab, #ffffff, var(--bg) 18%));
+      box-shadow: 0 8px 20px rgba(18, 25, 33, 0.08);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease;
+    }
+
+    .shape-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .shape-button:focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 3px;
+    }
+
+    .shape-button[aria-pressed="true"] {
+      transform: scale(1.08);
+      box-shadow: 0 12px 28px color-mix(in oklab, var(--accent), transparent 84%);
+    }
+
+    .shape-icon {
+      inline-size: 1.25rem;
+      block-size: 1.25rem;
+      background: currentColor;
+      display: inline-block;
+    }
+
+    .shape-icon.circle {
+      border-radius: 50%;
+    }
+
+    .shape-icon.triangle {
+      clip-path: polygon(50% 6%, 95% 92%, 5% 92%);
+    }
+
+    .shape-icon.square {
+      border-radius: 0.35rem;
+    }
+
+    .shape-icon.heart {
+      clip-path: path("M50 91 C35 79 4 54 4 31 C4 15 16 4 30 4 C39 4 46 9 50 16 C54 9 61 4 70 4 C84 4 96 15 96 31 C96 54 65 79 50 91 Z");
+    }
+
+    .shape-icon.star {
+      clip-path: polygon(50% 2%, 61% 34%, 96% 35%, 68% 55%, 79% 89%, 50% 69%, 21% 89%, 32% 55%, 4% 35%, 39% 34%);
+    }
+
+    .shape-button.selected {
+      background: linear-gradient(180deg, color-mix(in oklab, var(--paper-1), #ffffff 30%), color-mix(in oklab, var(--paper-2), #ffffff 20%));
+      color: #1a4d68;
+    }
+
+    .palette-panel {
+      display: flex;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.7rem 0.8rem;
+      border-radius: 1.2rem;
+      background: color-mix(in oklab, var(--panel), transparent 6%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+
+    .palette-button {
+      inline-size: 2.8rem;
+      block-size: 2.8rem;
+      border-radius: 999px;
+      border: 0;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.34), 0 8px 20px rgba(18, 25, 33, 0.08);
+    }
+
+    .palette-button:focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 3px;
+    }
+
+    .palette-button[data-color="sky"] { background: #88d6ef; }
+    .palette-button[data-color="red"] { background: #f26f7a; }
+    .palette-button[data-color="yellow"] { background: #f1c74d; }
+    .palette-button[data-color="green"] { background: #5ec57d; }
+    .palette-button[data-color="pink"] { background: #f2a6cf; }
+    .palette-button[data-color="mint"] { background: #89e0c1; }
+
+    .palette-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .palette-header .swatch {
+      inline-size: 0.6rem;
+      block-size: 0.6rem;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .drawer {
+      position: absolute;
+      inset-block-start: 1rem;
+      inset-inline-end: 1rem;
+      display: grid;
+      gap: 0.6rem;
+      justify-items: end;
+    }
+
+    .drawer .util-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .state-mirror {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0.95rem 1rem;
+      border-radius: 1.4rem;
+      background: color-mix(in oklab, var(--panel), transparent 8%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 20%);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(12px);
+      max-inline-size: 24rem;
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+
+    .state-field {
+      padding: 0.65rem 0.75rem;
+      border-radius: 1rem;
+      background: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.34);
+    }
+
+    .state-label {
+      display: block;
+      font-size: 0.66rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-block-end: 0.2rem;
+    }
+
+    .state-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .footer-rail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .variant-a {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 1rem;
+    }
+
+    .variant-a .scene {
+      padding-block: 1rem 2rem;
+    }
+
+    .variant-a .drawer {
+      inset-block-end: 1rem;
+      inset-block-start: auto;
+      inset-inline: 0;
+      justify-items: center;
+      pointer-events: none;
+    }
+
+    .variant-a .drawer > * {
+      pointer-events: auto;
+    }
+
+    .variant-a .state-mirror {
+      justify-self: start;
+      max-inline-size: min(100%, 27rem);
+    }
+
+    .variant-b {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(16rem, 0.7fr);
+      gap: 1.2rem;
+      align-items: stretch;
+    }
+
+    .variant-b .paper-shell {
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+
+    .variant-b .scene {
+      align-content: center;
+      min-block-size: 0;
+      padding-block: 1rem;
+    }
+
+    .variant-b .side {
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+      padding: 1rem;
+      border-radius: 1.5rem;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel), transparent 4%), transparent);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 26%);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(10px);
+    }
+
+    .variant-b .tool-rail {
+      min-inline-size: auto;
+    }
+
+    .variant-b .palette-panel {
+      justify-content: flex-start;
+    }
+
+    .variant-b .state-mirror {
+      max-inline-size: none;
+    }
+
+    .variant-c {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 1rem;
+    }
+
+    .variant-c .scene {
+      position: relative;
+      overflow: visible;
+      padding-block: 0.5rem 1rem;
+    }
+
+    .variant-c .paper-stage {
+      inline-size: min(66vw, 40rem);
+      box-shadow: none;
+    }
+
+    .variant-c .paper-stage::before {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in oklab, var(--paper-edge), transparent 38%),
+        0 20px 45px rgba(18, 25, 33, 0.18);
+    }
+
+    .variant-c .orbit {
+      position: absolute;
+      inset: -1rem;
+      border-radius: 50%;
+      border: 1px dashed color-mix(in oklab, var(--line), transparent 62%);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .constellation-shelf {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 1.35fr) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+      padding: 1rem;
+      border-radius: 1.6rem;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel), transparent 8%), transparent);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 24%);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(10px);
+    }
+
+    .constellation-spoke {
+      display: grid;
+      gap: 0.8rem;
+      align-content: start;
+    }
+
+    .constellation-core {
+      display: grid;
+      gap: 0.8rem;
+      justify-items: center;
+    }
+
+    .constellation-core .tool-dock {
+      width: min(100%, 34rem);
+    }
+
+    .constellation-spoke .tool-dock,
+    .constellation-spoke .state-mirror {
+      width: 100%;
+    }
+
+    .constellation-spoke .tool-dock {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .variant-c .state-mirror {
+      justify-self: end;
+    }
+
+    .variant-c .status-row {
+      align-items: flex-start;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .screen-reader-only {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .prototype-switcher {
+      position: fixed;
+      inset-inline: 50%;
+      inset-block-end: calc(0.75rem + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--bar-bg), transparent 4%);
+      border: 1px solid color-mix(in oklab, var(--line), transparent 28%);
+      box-shadow: 0 18px 46px rgba(10, 14, 20, 0.22);
+      backdrop-filter: blur(16px);
+      color: var(--ink);
+    }
+
+    .prototype-switcher button {
+      min-inline-size: 2.25rem;
+      min-block-size: 2.25rem;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.88);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+    }
+
+    .prototype-switcher button:focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    .prototype-label {
+      min-inline-size: 13rem;
+      text-align: center;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding-inline: 0.35rem;
+    }
+
+    .prototype-label small {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-block-start: 0.12rem;
+    }
+
+    @media (max-width: 920px) {
+      .variant-b {
+        grid-template-columns: 1fr;
+      }
+
+      .variant-b .side {
+        order: -1;
+      }
+
+      .constellation-shelf {
+        grid-template-columns: 1fr;
+      }
+
+      .variant-c .state-mirror {
+        justify-self: stretch;
+      }
+
+      .constellation-core .tool-dock {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 700px) {
+      :root {
+        --paper-size: min(74vw, 40vh);
+      }
+
+      .status-row {
+        align-items: flex-start;
+      }
+
+      .state-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prototype-label {
+        min-inline-size: 11rem;
+      }
+
+      .tool-dock,
+      .tool-rail,
+      .palette-panel,
+      .state-mirror {
+        border-radius: 1.2rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="decor" aria-hidden="true">
+      <div class="blob one"></div>
+      <div class="blob two"></div>
+      <div class="blob three"></div>
+    </div>
+    <div id="app"></div>
+
+    <div id="switcher" class="prototype-switcher" hidden>
+      <button type="button" id="prev-variant" aria-label="Previous variant">←</button>
+      <div class="prototype-label" id="variant-label">
+        A
+        <small>Center stage</small>
+      </div>
+      <button type="button" id="next-variant" aria-label="Next variant">→</button>
+    </div>
+  </main>
+
+  <script>
+    const VARIANTS = [
+      { key: "A", name: "Center stage" },
+      { key: "B", name: "Split rail" },
+      { key: "C", name: "Orbit" }
+    ];
+
+    const SHAPES = [
+      { key: "circle", label: "Circle", icon: "circle" },
+      { key: "triangle", label: "Triangle", icon: "triangle" },
+      { key: "square", label: "Square", icon: "square" },
+      { key: "heart", label: "Heart", icon: "heart" },
+      { key: "star", label: "Star", icon: "star" }
+    ];
+
+    const COLORS = [
+      { key: "sky", label: "Sky", value: "#88d6ef" },
+      { key: "red", label: "Red", value: "#f26f7a" },
+      { key: "yellow", label: "Yellow", value: "#f1c74d" },
+      { key: "green", label: "Green", value: "#5ec57d" },
+      { key: "pink", label: "Pink", value: "#f2a6cf" }
+    ];
+
+    const STATE = {
+      folds: 0,
+      cuts: [],
+      selectedShape: 0,
+      selectedColor: 0,
+      paletteOpen: false,
+      soundOn: true,
+      phase: "idle",
+      paperMotion: 0
+    };
+
+    const app = document.getElementById("app");
+    const switcher = document.getElementById("switcher");
+    const variantLabel = document.getElementById("variant-label");
+    const prevBtn = document.getElementById("prev-variant");
+    const nextBtn = document.getElementById("next-variant");
+
+    const supportsLocalPrototypeBar = ["localhost", "127.0.0.1", "::1", ""].includes(location.hostname);
+    if (supportsLocalPrototypeBar) {
+      switcher.hidden = false;
+    }
+
+    function getVariantKey() {
+      const variant = new URLSearchParams(location.search).get("variant");
+      const match = VARIANTS.find((item) => item.key.toLowerCase() === String(variant || "A").toLowerCase());
+      return match ? match.key : "A";
+    }
+
+    function getVariantMeta(key) {
+      return VARIANTS.find((item) => item.key === key) || VARIANTS[0];
+    }
+
+    function setVariant(key) {
+      const params = new URLSearchParams(location.search);
+      params.set("variant", key);
+      const nextUrl = `${location.pathname}?${params.toString()}${location.hash}`;
+      history.replaceState({}, "", nextUrl);
+      render();
+    }
+
+    function cycleVariant(delta) {
+      const current = VARIANTS.findIndex((item) => item.key === getVariantKey());
+      const next = (current + delta + VARIANTS.length) % VARIANTS.length;
+      setVariant(VARIANTS[next].key);
+    }
+
+    function shapeForIndex(index) {
+      return SHAPES[index % SHAPES.length];
+    }
+
+    function colorForIndex(index) {
+      return COLORS[index % COLORS.length];
+    }
+
+    function holeCopies(foldCount, cut) {
+      const points = [
+        [cut.x, cut.y]
+      ];
+      if (foldCount >= 1) {
+        points.push([1 - cut.x, cut.y]);
+      }
+      if (foldCount >= 2) {
+        const current = points.slice();
+        current.forEach(([x, y]) => points.push([x, 1 - y]));
+      }
+      if (foldCount >= 3) {
+        const current = points.slice();
+        current.forEach(([x, y]) => points.push([1 - x, y]));
+      }
+      const seen = new Set();
+      return points.filter(([x, y]) => {
+        const key = `${Math.round(x * 1000)}:${Math.round(y * 1000)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function visibleHoles() {
+      return STATE.cuts.flatMap((cut) => holeCopies(STATE.folds, cut).map(([x, y]) => ({ ...cut, x, y })));
+    }
+
+    function currentStateLabel() {
+      if (STATE.phase === "opening") return "opening";
+      if (STATE.phase === "complete") return "complete";
+      if (STATE.paletteOpen) return "palette";
+      if (STATE.cuts.length > 0) return "cut";
+      if (STATE.folds === 0) return "initial";
+      return `fold ${STATE.folds}`;
+    }
+
+    function canFold() {
+      return STATE.phase === "idle" && !STATE.paletteOpen && STATE.cuts.length === 0 && STATE.folds < 3;
+    }
+
+    function canCut() {
+      return STATE.phase === "idle" && !STATE.paletteOpen && STATE.folds > 0;
+    }
+
+    function canOpen() {
+      return STATE.phase === "idle" && !STATE.paletteOpen && STATE.cuts.length > 0;
+    }
+
+    function canNewPaper() {
+      return STATE.phase === "complete";
+    }
+
+    function addCut() {
+      if (!canCut()) return;
+      const shape = shapeForIndex(STATE.selectedShape);
+      const palette = colorForIndex(STATE.selectedColor);
+      const point = seededPoint(STATE.cuts.length, STATE.folds);
+      STATE.cuts.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        shape: shape.icon,
+        label: shape.label,
+        color: palette.key,
+        x: point.x,
+        y: point.y
+      });
+      if (STATE.cuts.length > 10) {
+        STATE.cuts.shift();
+      }
+      render();
+    }
+
+    function seededPoint(index, folds) {
+      const slots = [
+        { x: 0.31, y: 0.34 },
+        { x: 0.55, y: 0.28 },
+        { x: 0.69, y: 0.43 },
+        { x: 0.44, y: 0.62 },
+        { x: 0.64, y: 0.67 },
+        { x: 0.27, y: 0.57 },
+        { x: 0.36, y: 0.75 },
+        { x: 0.72, y: 0.27 },
+        { x: 0.52, y: 0.52 },
+        { x: 0.78, y: 0.58 }
+      ];
+      const base = slots[index % slots.length];
+      const spread = 0.03 + folds * 0.01;
+      const wobble = ((index % 3) - 1) * spread;
+      return {
+        x: clamp(base.x + wobble, 0.14, 0.86),
+        y: clamp(base.y - wobble * 0.8, 0.14, 0.86)
+      };
+    }
+
+    function foldPaper() {
+      if (!canFold()) return;
+      STATE.folds += 1;
+      render();
+    }
+
+    function togglePalette(force) {
+      if (STATE.phase !== "idle" && STATE.phase !== "complete") return;
+      STATE.paletteOpen = typeof force === "boolean" ? force : !STATE.paletteOpen;
+      render();
+    }
+
+    function openPaper() {
+      if (!canOpen()) return;
+      STATE.phase = "opening";
+      render();
+      window.setTimeout(() => {
+        STATE.phase = "complete";
+        render();
+      }, 850);
+    }
+
+    function newPaper() {
+      if (!canNewPaper()) return;
+      STATE.phase = "idle";
+      STATE.folds = 0;
+      STATE.cuts = [];
+      STATE.selectedShape = 0;
+      STATE.selectedColor = 0;
+      STATE.paletteOpen = false;
+      STATE.paperMotion += 1;
+      render();
+    }
+
+    function selectShape(index) {
+      STATE.selectedShape = index;
+      render();
+      pulseState();
+    }
+
+    function selectColor(index) {
+      STATE.selectedColor = index;
+      STATE.paletteOpen = false;
+      render();
+      pulseState();
+    }
+
+    function toggleSound() {
+      STATE.soundOn = !STATE.soundOn;
+      render();
+      pulseState();
+    }
+
+    function pulseState() {
+      if (!STATE.soundOn) return;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function holeStyle(cut) {
+      return `
+        inset-inline-start: ${cut.x * 100}%;
+        inset-block-start: ${cut.y * 100}%;
+        inline-size: ${cut.shape === "star" ? "14%" : cut.shape === "heart" ? "11%" : cut.shape === "triangle" ? "10%" : cut.shape === "square" ? "9.5%" : "8.2%"};
+        block-size: ${cut.shape === "star" ? "14%" : cut.shape === "heart" ? "11%" : cut.shape === "triangle" ? "10%" : cut.shape === "square" ? "9.5%" : "8.2%"};
+      `;
+    }
+
+    function renderPaper() {
+      const stageClass = "paper-stage";
+      const holes = visibleHoles();
+      const label = currentStateLabel();
+      const foldText = STATE.folds === 0 ? "none" : String(STATE.folds);
+      const cutText = String(STATE.cuts.length);
+
+      return `
+        <div class="scene" data-variant="${getVariantKey()}">
+          <div class="${stageClass}" style="--paper-color:${colorForIndex(STATE.selectedColor).value}">
+            <div class="paper-frame" role="button" tabindex="0" aria-label="Paper canvas" id="paper-canvas">
+              <div class="fold-back"></div>
+              <div class="fold-layer" style="transform: rotate(${STATE.paperMotion * 180}deg) scale(${STATE.phase === "opening" ? 0.98 : 1}); opacity:${STATE.phase === "opening" ? 0.88 : 1};"></div>
+              ${STATE.folds >= 1 ? '<div class="crease"></div>' : ""}
+              ${STATE.folds >= 2 ? '<div class="crease horizontal"></div>' : ""}
+              <div class="holes">
+                ${holes.map((hole) => `<div class="hole shape-${hole.shape}" style="${holeStyle(hole)}"></div>`).join("")}
+              </div>
+            </div>
+            <div class="paper-note"><span class="mini-dot"></span>${label} · folds ${foldText} · cuts ${cutText}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderControls(kind) {
+      const palette = colorForIndex(STATE.selectedColor);
+      const shapeButtons = SHAPES.map((shape, index) => {
+        const isSelected = STATE.selectedShape === index;
+        return `
+          <button class="shape-button ${isSelected ? "selected" : ""}" type="button" data-action="shape" data-index="${index}" aria-pressed="${isSelected}" aria-label="${shape.label}">
+            <span class="shape-icon ${shape.icon}" aria-hidden="true"></span>
+          </button>
+        `;
+      }).join("");
+
+      const colorButtons = COLORS.map((color, index) => `
+        <button class="palette-button" type="button" data-action="color" data-index="${index}" data-color="${color.key}" aria-label="${color.label}"></button>
+      `).join("");
+
+      const shapeStrip = `<div class="shape-strip" role="toolbar" aria-label="Shape selector">${shapeButtons}</div>`;
+      const paperButtons = `
+        ${canFold() ? `<button class="icon-button" type="button" data-action="fold" aria-label="Fold paper"><span class="button-icon fold" aria-hidden="true"></span></button>` : ""}
+        ${STATE.folds > 0 ? shapeStrip : ""}
+        ${canOpen() ? `<button class="icon-button" type="button" data-action="open" aria-label="Open paper"><span class="button-icon open" aria-hidden="true"></span></button>` : ""}
+        ${canNewPaper() ? `<button class="icon-button" type="button" data-action="new" aria-label="New paper"><span class="button-icon new" aria-hidden="true"></span></button>` : ""}
+      `;
+
+      const utilityButtons = `
+        <button class="icon-button" type="button" data-action="palette" aria-label="Color palette" aria-pressed="${STATE.paletteOpen}">
+          <span class="button-icon palette" aria-hidden="true"></span>
+        </button>
+        <button class="icon-button" type="button" data-action="sound" aria-label="Sound ${STATE.soundOn ? "on" : "off"}" aria-pressed="${STATE.soundOn}">
+          <span class="button-icon ${STATE.soundOn ? "sound" : "sound-off"}" aria-hidden="true"></span>
+        </button>
+      `;
+
+      const palettePanel = `
+        <div class="palette-panel ${STATE.paletteOpen ? "" : "hidden"}" aria-label="Color palette">
+          <div class="palette-header"><span class="swatch" style="background:${palette.value}"></span>palette</div>
+          ${colorButtons}
+        </div>
+      `;
+
+      const stateMirror = `
+        <section class="state-mirror" aria-label="Prototype state mirror">
+          <div class="status-row">
+            <div class="status-card">
+              <span class="status-pill" data-tone="paper" data-on="true"><span class="status-dot"></span>paper</span>
+              <span class="status-pill" data-tone="good" data-on="${STATE.cuts.length > 0}"><span class="status-dot"></span>cuts ${STATE.cuts.length}</span>
+              <span class="status-pill" data-tone="warm" data-on="${STATE.paletteOpen}"><span class="status-dot"></span>palette ${STATE.paletteOpen ? "open" : "closed"}</span>
+            </div>
+          </div>
+          <div class="state-grid">
+            <div class="state-field">
+              <span class="state-label">phase</span>
+              <span class="state-value">${STATE.phase}</span>
+            </div>
+            <div class="state-field">
+              <span class="state-label">folds</span>
+              <span class="state-value">${STATE.folds}</span>
+            </div>
+            <div class="state-field">
+              <span class="state-label">shape</span>
+              <span class="state-value">${shapeForIndex(STATE.selectedShape).label}</span>
+            </div>
+            <div class="state-field">
+              <span class="state-label">color</span>
+              <span class="state-value">${colorForIndex(STATE.selectedColor).label}</span>
+            </div>
+          </div>
+        </section>
+      `;
+
+      if (kind === "A") {
+        return `
+          <section class="variant-a">
+            <div class="status-row">
+              ${stateMirror}
+              <div class="status-card">
+                <span class="status-pill" data-tone="ink" data-on="true"><span class="status-dot"></span>textless child ui</span>
+                <span class="status-pill" data-tone="paper" data-on="true"><span class="status-dot"></span>one-tap actions</span>
+                <span class="status-pill" data-tone="good" data-on="${!STATE.paletteOpen}"><span class="status-dot"></span>${STATE.paletteOpen ? "palette mode" : "main mode"}</span>
+              </div>
+            </div>
+            <div class="scene">
+              ${renderPaper()}
+            </div>
+            <div class="drawer">
+              ${STATE.paletteOpen ? palettePanel : ""}
+              <div class="tool-dock">
+                ${STATE.paletteOpen ? utilityButtons : paperButtons + utilityButtons}
+              </div>
+            </div>
+          </section>
+        `;
+      }
+
+      if (kind === "B") {
+        return `
+          <section class="variant-b">
+            <div class="paper-shell">
+              <div class="status-row">
+                <div class="status-card">
+                  <span class="status-pill" data-tone="paper" data-on="true"><span class="status-dot"></span>atelier</span>
+                  <span class="status-pill" data-tone="good" data-on="${STATE.cuts.length > 0}"><span class="status-dot"></span>${STATE.cuts.length} marks</span>
+                  <span class="status-pill" data-tone="warm" data-on="${STATE.folds > 0}"><span class="status-dot"></span>${STATE.folds} folds</span>
+                </div>
+                ${stateMirror}
+              </div>
+              <div class="scene">
+                ${renderPaper()}
+              </div>
+              <div class="tool-dock">
+                ${paperButtons}
+              </div>
+            </div>
+            <aside class="side">
+              <div class="tool-rail">
+                ${utilityButtons}
+                ${STATE.paletteOpen ? palettePanel : ""}
+              </div>
+              <div class="status-card" style="flex-direction:column;align-items:flex-start;">
+                <span class="status-pill" data-tone="ink" data-on="true"><span class="status-dot"></span>primary</span>
+                <span class="status-pill" data-tone="paper" data-on="true"><span class="status-dot"></span>paper centered</span>
+                <span class="status-pill" data-tone="good" data-on="${STATE.phase === "complete"}"><span class="status-dot"></span>${STATE.phase}</span>
+              </div>
+            </aside>
+          </section>
+        `;
+      }
+
+      return `
+          <section class="variant-c">
+            <div class="status-row">
+              <div class="status-card">
+                <span class="status-pill" data-tone="paper" data-on="true"><span class="status-dot"></span>orbit</span>
+              <span class="status-pill" data-tone="good" data-on="${STATE.soundOn}"><span class="status-dot"></span>${STATE.soundOn ? "sound on" : "sound off"}</span>
+              <span class="status-pill" data-tone="warm" data-on="${STATE.paletteOpen}"><span class="status-dot"></span>${STATE.paletteOpen ? "palette open" : "palette closed"}</span>
+            </div>
+            ${stateMirror}
+          </div>
+          <div class="scene">
+            <div class="orbit"></div>
+            ${renderPaper()}
+          </div>
+          <div class="constellation-shelf">
+            <div class="constellation-spoke">
+              <div class="tool-dock">
+                ${utilityButtons}
+              </div>
+              ${STATE.paletteOpen ? palettePanel : ""}
+            </div>
+            <div class="constellation-core">
+              <div class="tool-dock">
+                ${paperButtons}
+              </div>
+            </div>
+            <div class="constellation-spoke">
+              ${stateMirror}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function render() {
+      const key = getVariantKey();
+      const meta = getVariantMeta(key);
+      variantLabel.innerHTML = `${meta.key}<small>${meta.name}</small>`;
+      app.innerHTML = renderControls(meta.key);
+      bindInteractions();
+      if (!STATE.paletteOpen) {
+        document.querySelectorAll(".palette-panel").forEach((panel) => panel.classList.add("hidden"));
+      }
+    }
+
+    function onPaperKeydown(event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        addCut();
+      }
+    }
+
+    function onPaperActivate() {
+      addCut();
+    }
+
+    function bindInteractions() {
+      app.querySelectorAll("[data-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.action;
+          if (action === "fold") foldPaper();
+          if (action === "open") openPaper();
+          if (action === "new") newPaper();
+          if (action === "palette") togglePalette();
+          if (action === "sound") toggleSound();
+          if (action === "shape") selectShape(Number(button.dataset.index));
+          if (action === "color") selectColor(Number(button.dataset.index));
+        });
+      });
+
+      const paperCanvas = document.getElementById("paper-canvas");
+      if (paperCanvas) {
+        paperCanvas.addEventListener("click", onPaperActivate, { once: true });
+        paperCanvas.addEventListener("keydown", onPaperKeydown);
+      }
+    }
+
+    prevBtn.addEventListener("click", () => cycleVariant(-1));
+    nextBtn.addEventListener("click", () => cycleVariant(1));
+
+    window.addEventListener("keydown", (event) => {
+      if (event.target && event.target.closest && event.target.closest("input, textarea, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        cycleVariant(-1);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        cycleVariant(1);
+      }
+      if (event.key === "Escape" && STATE.paletteOpen) {
+        togglePalette(false);
+      }
+    });
+
+    window.addEventListener("pointerdown", (event) => {
+      if (!STATE.paletteOpen) return;
+      const target = event.target;
+      if (target.closest && target.closest(".palette-panel")) return;
+      if (target.closest && target.closest("[data-action='palette']")) return;
+      togglePalette(false);
+    });
+
+    window.addEventListener("popstate", render);
+
+    render();
+  </script>
+</body>
+</html>
