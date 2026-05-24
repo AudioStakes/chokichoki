@@ -40,10 +40,23 @@ export function getVisibleControls(state: ShellState): VisibleControls {
       showColorButton: true,
       showSoundButton: true,
       showShapeRow: state.foldCount > 0,
-      showOpenButton: false,
+      showOpenButton: state.cuts.length > 0,
       showNewPaperButton: false,
       showPalette: false,
       allowPaperTap: state.foldCount > 0,
+    };
+  }
+
+  if (state.phase === 'completed') {
+    return {
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: true,
+      showPalette: false,
+      allowPaperTap: false,
     };
   }
 
@@ -91,6 +104,7 @@ export function selectShape(state: ShellState, selectedShape: CutShape): ShellSt
 export function tapPaper(state: ShellState, tap: { x: number; y: number }): ShellState {
   if (
     state.foldCount <= 0 ||
+    state.phase === 'completed' ||
     state.phase === 'folding' ||
     state.phase === 'unfolding' ||
     state.phase === 'resetting'
@@ -107,4 +121,36 @@ export function tapPaper(state: ShellState, tap: { x: number; y: number }): Shel
   const cuts = appendCuts(state.cuts, placements);
 
   return { ...state, phase: 'cutting', cuts };
+}
+
+export function pressOpenButton(state: ShellState): ShellState {
+  if (state.cuts.length === 0 || (state.phase !== 'folded' && state.phase !== 'cutting')) {
+    return state;
+  }
+
+  return { ...state, phase: 'unfolding' };
+}
+
+export function completeUnfoldAnimation(state: ShellState): ShellState {
+  if (state.phase !== 'unfolding') {
+    return state;
+  }
+
+  return { ...state, phase: 'completed' };
+}
+
+export function pressNewPaperButton(state: ShellState): ShellState {
+  if (state.phase !== 'completed') {
+    return state;
+  }
+
+  return { ...state, phase: 'resetting' };
+}
+
+export function completeResetAnimation(state: ShellState): ShellState {
+  if (state.phase !== 'resetting') {
+    return state;
+  }
+
+  return createShellState();
 }

@@ -74,4 +74,79 @@ describe('App shell', () => {
     expect(screen.getAllByTestId('cut-hole')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: 'fold' })).not.toBeInTheDocument();
   });
+
+  it('shows the open button after the first cut', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 210,
+      clientY: 180,
+    });
+
+    expect(screen.getByRole('button', { name: 'open' })).toBeInTheDocument();
+  });
+
+  it('shows the new paper button after unfolding completes', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 210,
+      clientY: 180,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    expect(screen.getByRole('button', { name: 'new paper' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'open' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'circle' })).not.toBeInTheDocument();
+  });
+
+  it('returns to the idle screen after selecting new paper', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 210,
+      clientY: 180,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'new paper' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    expect(screen.getByRole('button', { name: 'fold' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'color' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'sound' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'new paper' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'circle' })).not.toBeInTheDocument();
+  });
 });

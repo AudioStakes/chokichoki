@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   completeFoldAnimation,
+  completeResetAnimation,
+  completeUnfoldAnimation,
   createShellState,
   getVisibleControls,
   pressFoldButton,
+  pressNewPaperButton,
+  pressOpenButton,
   tapPaper,
 } from './shell';
 
@@ -105,10 +109,101 @@ describe('shell state', () => {
       showColorButton: true,
       showSoundButton: true,
       showShapeRow: true,
-      showOpenButton: false,
+      showOpenButton: true,
       showNewPaperButton: false,
       showPalette: false,
       allowPaperTap: true,
     });
+  });
+
+  it('shows the open button after the first cut', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+
+    expect(getVisibleControls(cutState)).toEqual({
+      showFoldButton: false,
+      showColorButton: true,
+      showSoundButton: true,
+      showShapeRow: true,
+      showOpenButton: true,
+      showNewPaperButton: false,
+      showPalette: false,
+      allowPaperTap: true,
+    });
+  });
+
+  it('enters unfolding and hides controls when the open button is pressed', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const unfolding = pressOpenButton(cutState);
+
+    expect(unfolding.phase).toBe('unfolding');
+    expect(getVisibleControls(unfolding)).toEqual({
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: false,
+      allowPaperTap: false,
+    });
+  });
+
+  it('completes unfolding and shows only the new paper button', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const unfolding = pressOpenButton(cutState);
+    const completed = completeUnfoldAnimation(unfolding);
+
+    expect(completed.phase).toBe('completed');
+    expect(getVisibleControls(completed)).toEqual({
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: true,
+      showPalette: false,
+      allowPaperTap: false,
+    });
+  });
+
+  it('ignores paper taps after completion', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const completed = completeUnfoldAnimation(pressOpenButton(cutState));
+    const afterTap = tapPaper(completed, { x: 0.4, y: 0.4 });
+
+    expect(afterTap).toEqual(completed);
+  });
+
+  it('enters resetting when the new paper button is pressed', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const completed = completeUnfoldAnimation(pressOpenButton(cutState));
+    const resetting = pressNewPaperButton(completed);
+
+    expect(resetting.phase).toBe('resetting');
+    expect(getVisibleControls(resetting)).toEqual({
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: false,
+      allowPaperTap: false,
+    });
+  });
+
+  it('returns to idle when the reset animation completes', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const completed = completeUnfoldAnimation(pressOpenButton(cutState));
+    const resetting = pressNewPaperButton(completed);
+    const idle = completeResetAnimation(resetting);
+
+    expect(idle).toEqual(createShellState());
   });
 });

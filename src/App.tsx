@@ -2,9 +2,13 @@ import { Palette, Volume2 } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import {
   completeFoldAnimation,
+  completeResetAnimation,
+  completeUnfoldAnimation,
   createShellState,
   getVisibleControls,
   pressFoldButton,
+  pressNewPaperButton,
+  pressOpenButton,
   type ShellState,
   selectShape,
   tapPaper,
@@ -25,6 +29,50 @@ function FoldIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function OpenIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
+      <path
+        d="M16 38c0-8 7-14 16-14s16 6 16 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M26 24l6-6 6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function NewPaperIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
+      <path
+        d="M18 14h22l6 6v30a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M40 14v8h8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -70,29 +118,27 @@ function ShapeIcon({ shape }: { shape: 'circle' | 'triangle' | 'square' | 'heart
 export default function App() {
   const [shell, setShell] = useState<ShellState>(() => createShellState());
   const foldTimerRef = useRef<number | null>(null);
+  const unfoldTimerRef = useRef<number | null>(null);
+  const resetTimerRef = useRef<number | null>(null);
   const paperShellRef = useRef<HTMLDivElement | null>(null);
   const visible = getVisibleControls(shell);
-  const showShapeRow =
-    shell.foldCount > 0 &&
-    shell.phase !== 'folding' &&
-    shell.phase !== 'unfolding' &&
-    shell.phase !== 'resetting';
-  const allowPaperTap =
-    shell.foldCount > 0 &&
-    shell.phase !== 'folding' &&
-    shell.phase !== 'unfolding' &&
-    shell.phase !== 'resetting';
 
   useEffect(() => {
     return () => {
       if (foldTimerRef.current != null) {
         window.clearTimeout(foldTimerRef.current);
       }
+      if (unfoldTimerRef.current != null) {
+        window.clearTimeout(unfoldTimerRef.current);
+      }
+      if (resetTimerRef.current != null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
     };
   }, []);
 
   function handlePaperPointerDown(event: ReactPointerEvent<HTMLElement>) {
-    if (!allowPaperTap || !paperShellRef.current) {
+    if (!visible.allowPaperTap || !paperShellRef.current) {
       return;
     }
 
@@ -148,7 +194,7 @@ export default function App() {
       </main>
 
       <footer className="bottom-bar">
-        {showShapeRow ? (
+        {visible.showShapeRow ? (
           <fieldset className="shape-row">
             {(['circle', 'triangle', 'square', 'heart', 'star'] as const).map((shape) => (
               <button
@@ -183,6 +229,44 @@ export default function App() {
             }}
           >
             <FoldIcon />
+          </IconButton>
+        ) : null}
+        {visible.showOpenButton ? (
+          <IconButton
+            label="open"
+            onClick={() => {
+              if (unfoldTimerRef.current != null) {
+                window.clearTimeout(unfoldTimerRef.current);
+              }
+
+              setShell((current) => pressOpenButton(current));
+
+              unfoldTimerRef.current = window.setTimeout(() => {
+                setShell((current) => completeUnfoldAnimation(current));
+                unfoldTimerRef.current = null;
+              }, 1200);
+            }}
+          >
+            <OpenIcon />
+          </IconButton>
+        ) : null}
+        {visible.showNewPaperButton ? (
+          <IconButton
+            label="new paper"
+            onClick={() => {
+              if (resetTimerRef.current != null) {
+                window.clearTimeout(resetTimerRef.current);
+              }
+
+              setShell((current) => pressNewPaperButton(current));
+
+              resetTimerRef.current = window.setTimeout(() => {
+                setShell((current) => completeResetAnimation(current));
+                resetTimerRef.current = null;
+              }, 1200);
+            }}
+          >
+            <NewPaperIcon />
           </IconButton>
         ) : null}
       </footer>
