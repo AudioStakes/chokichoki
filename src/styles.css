@@ -48,9 +48,11 @@ button {
   position: relative;
   display: grid;
   place-items: center;
+  perspective: 1200px;
 }
 
 .paper {
+  position: relative;
   width: min(78vw, 320px);
   aspect-ratio: 1;
   border-radius: 24px;
@@ -58,6 +60,9 @@ button {
   box-shadow:
     0 24px 40px rgba(15, 23, 42, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, filter;
 }
 
 .paper[data-color="red"] {
@@ -78,6 +83,28 @@ button {
 
 .paper[data-color="pink"] {
   background: linear-gradient(145deg, #f8b4d9 0%, #eb7fb7 100%);
+}
+
+.paper[data-phase="folding"][data-fold-axis="vertical"] {
+  animation: fold-vertical 1.2s ease-in-out forwards;
+}
+
+.paper[data-phase="folding"][data-fold-axis="horizontal"] {
+  animation: fold-horizontal 1.2s ease-in-out forwards;
+}
+
+.paper[data-phase="unfolding"] {
+  transform: scale(0.94);
+  transition: transform 320ms ease;
+}
+
+.paper[data-phase="completed"] {
+  transform: scale(1.06);
+  transition: transform 320ms ease;
+}
+
+.paper[data-phase="resetting"] {
+  animation: paper-reset 1.2s ease-in-out forwards;
 }
 
 .cut-hole {
@@ -101,6 +128,53 @@ button {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.72);
   animation: fold-cue-flash 0.45s ease-out forwards;
+}
+
+.completion-sparkles {
+  position: absolute;
+  inset: -18px;
+  pointer-events: none;
+}
+
+.completion-sparkle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: conic-gradient(
+    from 45deg,
+    rgba(255, 255, 255, 0.1),
+    #ffffff 22%,
+    rgba(255, 255, 255, 0.1) 48%,
+    #ffffff 72%,
+    rgba(255, 255, 255, 0.1)
+  );
+  clip-path: polygon(50% 0%, 63% 33%, 100% 50%, 63% 67%, 50% 100%, 37% 67%, 0% 50%, 37% 33%);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+  animation: sparkle-pulse 1.6s ease-in-out infinite;
+}
+
+.completion-sparkle--one {
+  top: 6%;
+  left: 14%;
+}
+
+.completion-sparkle--two {
+  top: 18%;
+  right: 8%;
+  animation-delay: 0.2s;
+}
+
+.completion-sparkle--three {
+  bottom: 12%;
+  left: 8%;
+  animation-delay: 0.35s;
+}
+
+.completion-sparkle--four {
+  bottom: 8%;
+  right: 18%;
+  animation-delay: 0.5s;
 }
 
 .bottom-bar {
@@ -230,6 +304,10 @@ button {
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
 }
 
+.icon-button--pulse {
+  animation: fold-button-pulse 1.5s ease-in-out infinite;
+}
+
 @keyframes fold-cue-flash {
   0% {
     opacity: 0;
@@ -241,5 +319,78 @@ button {
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) scaleX(1);
+  }
+}
+
+@keyframes fold-button-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.2);
+  }
+}
+
+@keyframes fold-vertical {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
+    filter: saturate(1);
+  }
+  38% {
+    transform: translate3d(-4%, -1%, 0) scale(0.96) rotateY(-68deg);
+    filter: saturate(0.95);
+  }
+  68% {
+    transform: translate3d(2%, 1%, 0) scale(0.92) rotateY(-132deg);
+    filter: saturate(0.9);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.94) rotateY(0deg);
+    filter: saturate(0.98);
+  }
+}
+
+@keyframes fold-horizontal {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotateX(0deg);
+    filter: saturate(1);
+  }
+  38% {
+    transform: translate3d(0, 4%, 0) scale(0.96) rotateX(68deg);
+    filter: saturate(0.95);
+  }
+  68% {
+    transform: translate3d(0, -2%, 0) scale(0.92) rotateX(132deg);
+    filter: saturate(0.9);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.94) rotateX(0deg);
+    filter: saturate(0.98);
+  }
+}
+
+@keyframes paper-reset {
+  0% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.84);
+  }
+}
+
+@keyframes sparkle-pulse {
+  0%,
+  100% {
+    transform: scale(0.85) rotate(0deg);
+    opacity: 0.62;
+  }
+  50% {
+    transform: scale(1.15) rotate(18deg);
+    opacity: 1;
   }
 }

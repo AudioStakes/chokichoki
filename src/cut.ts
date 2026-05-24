@@ -7,6 +7,7 @@ export interface CutPlacement {
   shape: CutShape;
   x: number;
   y: number;
+  revealStep: number;
 }
 
 const CUT_LIMIT = 10;
@@ -78,6 +79,7 @@ export function buildCutPlacementsForTap(
     shape,
     x: visibleRect.x + tap.x * visibleRect.w,
     y: visibleRect.y + tap.y * visibleRect.h,
+    revealStep: Math.max(0, foldCount - 1),
   };
 
   if (foldCount <= 0) {
@@ -95,6 +97,7 @@ export function buildCutPlacementsForTap(
           shape,
           x: 2 * crease.value - placement.x,
           y: placement.y,
+          revealStep: step,
         };
       }
 
@@ -103,6 +106,7 @@ export function buildCutPlacementsForTap(
         shape,
         x: placement.x,
         y: 2 * crease.value - placement.y,
+        revealStep: step,
       };
     });
 

@@ -5,6 +5,7 @@ import {
   completeResetAnimation,
   completeUnfoldAnimation,
   createShellState,
+  getFoldStepForCount,
   getVisibleControls,
   openColorPalette,
   pressFoldButton,
@@ -85,13 +86,20 @@ function IconButton({
   label,
   children,
   onClick,
+  className,
 }: {
   label: string;
   children: React.ReactNode;
   onClick: () => void;
+  className?: string;
 }) {
   return (
-    <button type="button" aria-label={label} className="icon-button" onClick={onClick}>
+    <button
+      type="button"
+      aria-label={label}
+      className={className ?? 'icon-button'}
+      onClick={onClick}
+    >
       {children}
     </button>
   );
@@ -121,14 +129,26 @@ const PAPER_COLORS = ['red', 'sky', 'yellow', 'green', 'pink'] as const;
 
 export default function App() {
   const [shell, setShell] = useState<ShellState>(() => createShellState());
+  const [foldCueVisible, setFoldCueVisible] = useState(false);
+  const [unfoldVisibleStep, setUnfoldVisibleStep] = useState<number | null>(null);
+  const foldCueTimerRef = useRef<number | null>(null);
   const foldTimerRef = useRef<number | null>(null);
   const unfoldTimerRef = useRef<number | null>(null);
   const resetTimerRef = useRef<number | null>(null);
+  const unfoldVisibleStepRef = useRef<number | null>(null);
   const paperShellRef = useRef<HTMLDivElement | null>(null);
   const visible = getVisibleControls(shell);
+  const currentFoldStep = getFoldStepForCount(shell.foldCount);
+  const visibleCuts =
+    shell.phase === 'unfolding'
+      ? shell.cuts.filter((cut) => cut.revealStep >= (unfoldVisibleStep ?? shell.foldCount))
+      : shell.cuts;
 
   useEffect(() => {
     return () => {
+      if (foldCueTimerRef.current != null) {
+        window.clearTimeout(foldCueTimerRef.current);
+      }
       if (foldTimerRef.current != null) {
         window.clearTimeout(foldTimerRef.current);
       }
@@ -186,18 +206,30 @@ export default function App() {
       <main
         className="stage"
         aria-label="paper stage"
-        aria-busy={shell.phase === 'folding'}
+        aria-busy={
+          shell.phase === 'folding' || shell.phase === 'unfolding' || shell.phase === 'resetting'
+        }
         onPointerDown={handlePaperPointerDown}
       >
         <div className="paper-shell" ref={paperShellRef}>
-          {shell.phase === 'folding' ? <div className="fold-cue" aria-hidden="true" /> : null}
+          {foldCueVisible ? <div className="fold-cue" aria-hidden="true" /> : null}
           <div
             className="paper"
             aria-hidden="true"
             data-phase={shell.phase}
             data-color={shell.paperColor}
+            data-fold-axis={shell.phase === 'folding' ? currentFoldStep?.axis : undefined}
+            data-fold-side={shell.phase === 'folding' ? currentFoldStep?.side : undefined}
           />
-          {shell.cuts.map((cut) => (
+          {shell.phase === 'completed' ? (
+            <div className="completion-sparkles" aria-hidden="true">
+              <span className="completion-sparkle completion-sparkle--one" />
+              <span className="completion-sparkle completion-sparkle--two" />
+              <span className="completion-sparkle completion-sparkle--three" />
+              <span className="completion-sparkle completion-sparkle--four" />
+            </div>
+          ) : null}
+          {visibleCuts.map((cut) => (
             <div
               key={cut.id}
               className="cut-hole"
@@ -252,12 +284,24 @@ export default function App() {
         {visible.showFoldButton ? (
           <IconButton
             label="fold"
+            className={`icon-button${shell.phase === 'idle' && !shell.hasSeenFoldPrompt ? ' icon-button--pulse' : ''}`}
             onClick={() => {
+              if (foldCueTimerRef.current != null) {
+                window.clearTimeout(foldCueTimerRef.current);
+              }
               if (foldTimerRef.current != null) {
                 window.clearTimeout(foldTimerRef.current);
               }
 
+              unfoldVisibleStepRef.current = null;
+              setUnfoldVisibleStep(null);
+              setFoldCueVisible(true);
               setShell((current) => pressFoldButton(current));
+
+              foldCueTimerRef.current = window.setTimeout(() => {
+                setFoldCueVisible(false);
+                foldCueTimerRef.current = null;
+              }, 320);
 
               foldTimerRef.current = window.setTimeout(() => {
                 setShell((current) => completeFoldAnimation(current));
@@ -277,11 +321,31 @@ export default function App() {
               }
 
               setShell((current) => pressOpenButton(current));
+              unfoldVisibleStepRef.current = shell.foldCount;
+              setUnfoldVisibleStep(shell.foldCount);
 
-              unfoldTimerRef.current = window.setTimeout(() => {
+              const stepUnfold = () => {
+                const currentVisibleStep = unfoldVisibleStepRef.current;
+
+                if (currentVisibleStep == null) {
+                  unfoldTimerRef.current = null;
+                  return;
+                }
+
+                const nextVisibleStep = Math.max(0, currentVisibleStep - 1);
+                unfoldVisibleStepRef.current = nextVisibleStep;
+                setUnfoldVisibleStep(nextVisibleStep);
+
+                if (nextVisibleStep > 0) {
+                  unfoldTimerRef.current = window.setTimeout(stepUnfold, 320);
+                  return;
+                }
+
                 setShell((current) => completeUnfoldAnimation(current));
                 unfoldTimerRef.current = null;
-              }, 1200);
+              };
+
+              unfoldTimerRef.current = window.setTimeout(stepUnfold, 320);
             }}
           >
             <OpenIcon />
@@ -291,6 +355,16 @@ export default function App() {
           <IconButton
             label="new paper"
             onClick={() => {
+              if (foldCueTimerRef.current != null) {
+                window.clearTimeout(foldCueTimerRef.current);
+                foldCueTimerRef.current = null;
+              }
+              if (unfoldTimerRef.current != null) {
+                window.clearTimeout(unfoldTimerRef.current);
+                unfoldTimerRef.current = null;
+              }
+              unfoldVisibleStepRef.current = null;
+              setUnfoldVisibleStep(null);
               if (resetTimerRef.current != null) {
                 window.clearTimeout(resetTimerRef.current);
               }

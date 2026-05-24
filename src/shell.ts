@@ -1,6 +1,8 @@
 import { appendCuts, buildCutPlacementsForTap, type CutPlacement, type CutShape } from './cut';
 import { getMaxFoldCount } from './fold';
 
+export { getFoldStepForCount } from './fold';
+
 export type ShellPhase =
   | 'idle'
   | 'folding'
@@ -20,6 +22,8 @@ export interface ShellState {
   cuts: CutPlacement[];
   paperColor: PaperColor;
   paletteReturnPhase: Exclude<ShellPhase, 'palette'>;
+  hasSeenFoldPrompt: boolean;
+  unfoldRemainingSteps: number;
 }
 
 export interface VisibleControls {
@@ -41,6 +45,8 @@ export function createShellState(): ShellState {
     cuts: [],
     paperColor: 'sky',
     paletteReturnPhase: 'idle',
+    hasSeenFoldPrompt: false,
+    unfoldRemainingSteps: 0,
   };
 }
 
@@ -104,7 +110,7 @@ export function pressFoldButton(state: ShellState): ShellState {
     return state;
   }
 
-  return { ...state, phase: 'folding' };
+  return { ...state, phase: 'folding', hasSeenFoldPrompt: true };
 }
 
 export function completeFoldAnimation(state: ShellState): ShellState {
@@ -178,15 +184,32 @@ export function pressOpenButton(state: ShellState): ShellState {
     return state;
   }
 
-  return { ...state, phase: 'unfolding' };
+  return { ...state, phase: 'unfolding', unfoldRemainingSteps: state.foldCount };
 }
 
-export function completeUnfoldAnimation(state: ShellState): ShellState {
+export function advanceUnfoldAnimation(state: ShellState): ShellState {
   if (state.phase !== 'unfolding') {
     return state;
   }
 
-  return { ...state, phase: 'completed' };
+  if (state.unfoldRemainingSteps <= 1) {
+    return { ...state, phase: 'completed', unfoldRemainingSteps: 0 };
+  }
+
+  return {
+    ...state,
+    unfoldRemainingSteps: state.unfoldRemainingSteps - 1,
+  };
+}
+
+export function completeUnfoldAnimation(state: ShellState): ShellState {
+  let nextState = state;
+
+  while (nextState.phase === 'unfolding') {
+    nextState = advanceUnfoldAnimation(nextState);
+  }
+
+  return nextState;
 }
 
 export function pressNewPaperButton(state: ShellState): ShellState {
@@ -202,5 +225,9 @@ export function completeResetAnimation(state: ShellState): ShellState {
     return state;
   }
 
-  return { ...createShellState(), paperColor: state.paperColor };
+  return {
+    ...createShellState(),
+    paperColor: state.paperColor,
+    hasSeenFoldPrompt: state.hasSeenFoldPrompt,
+  };
 }

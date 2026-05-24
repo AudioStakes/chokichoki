@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceUnfoldAnimation,
   completeFoldAnimation,
   completeResetAnimation,
   completeUnfoldAnimation,
@@ -70,6 +71,8 @@ describe('shell state', () => {
       selectedShape: 'circle',
       cuts: [],
       paletteReturnPhase: 'idle',
+      hasSeenFoldPrompt: true,
+      unfoldRemainingSteps: 0,
     });
   });
 
@@ -183,6 +186,7 @@ describe('shell state', () => {
     const unfolding = pressOpenButton(cutState);
 
     expect(unfolding.phase).toBe('unfolding');
+    expect(unfolding.unfoldRemainingSteps).toBe(1);
     expect(getVisibleControls(unfolding)).toEqual({
       showFoldButton: false,
       showColorButton: false,
@@ -195,12 +199,16 @@ describe('shell state', () => {
     });
   });
 
-  it('completes unfolding and shows only the new paper button', () => {
-    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
-    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+  it('advances unfolding one step at a time before completing', () => {
+    const firstFold = completeFoldAnimation(pressFoldButton(createShellState()));
+    const twiceFolded = completeFoldAnimation(pressFoldButton(firstFold));
+    const cutState = tapPaper(twiceFolded, { x: 0.2, y: 0.3 });
     const unfolding = pressOpenButton(cutState);
-    const completed = completeUnfoldAnimation(unfolding);
+    const halfOpen = advanceUnfoldAnimation(unfolding);
+    const completed = advanceUnfoldAnimation(halfOpen);
 
+    expect(halfOpen.phase).toBe('unfolding');
+    expect(halfOpen.unfoldRemainingSteps).toBe(1);
     expect(completed.phase).toBe('completed');
     expect(getVisibleControls(completed)).toEqual({
       showFoldButton: false,
@@ -249,6 +257,9 @@ describe('shell state', () => {
     const resetting = pressNewPaperButton(completed);
     const idle = completeResetAnimation(resetting);
 
-    expect(idle).toEqual(createShellState());
+    expect(idle).toMatchObject({
+      ...createShellState(),
+      hasSeenFoldPrompt: true,
+    });
   });
 });

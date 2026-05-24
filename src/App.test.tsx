@@ -15,10 +15,26 @@ describe('App shell', () => {
   it('renders a text-free idle screen with the primary controls', () => {
     const { container } = render(<App />);
 
-    expect(screen.getByRole('button', { name: 'fold' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'fold' })).toHaveClass('icon-button--pulse');
     expect(screen.getByRole('button', { name: 'color' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'sound' })).toBeInTheDocument();
     expect(container.textContent?.trim()).toBe('');
+  });
+
+  it('shows a brief cue when the first fold begins', () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    expect(container.querySelector('.fold-cue')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'fold' })).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(container.querySelector('.fold-cue')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('paper stage')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('opens the color palette and hides the other controls', () => {
@@ -138,6 +154,44 @@ describe('App shell', () => {
     expect(screen.queryByRole('button', { name: 'fold' })).not.toBeInTheDocument();
   });
 
+  it('reveals mirrored cuts step by step while unfolding', async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 210,
+      clientY: 180,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+
+    expect(screen.queryAllByTestId('cut-hole')).toHaveLength(0);
+
+    await act(async () => {
+      vi.advanceTimersByTime(320);
+    });
+
+    expect(screen.getAllByTestId('cut-hole')).toHaveLength(2);
+
+    await act(async () => {
+      vi.advanceTimersByTime(320);
+    });
+
+    expect(screen.getAllByTestId('cut-hole')).toHaveLength(4);
+    expect(screen.getByRole('button', { name: 'new paper' })).toBeInTheDocument();
+  });
+
   it('shows the open button after the first cut', () => {
     render(<App />);
 
@@ -156,7 +210,7 @@ describe('App shell', () => {
   });
 
   it('shows the new paper button after unfolding completes', () => {
-    render(<App />);
+    const { container } = render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'fold' }));
 
@@ -178,6 +232,8 @@ describe('App shell', () => {
     expect(screen.getByRole('button', { name: 'new paper' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'open' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'circle' })).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('cut-hole')).toHaveLength(2);
+    expect(container.querySelectorAll('.completion-sparkle')).toHaveLength(4);
   });
 
   it('returns to the idle screen after selecting new paper', () => {
