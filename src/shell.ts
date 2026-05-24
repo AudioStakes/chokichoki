@@ -1,5 +1,5 @@
-import { getMaxFoldCount } from './fold';
 import { appendCuts, buildCutPlacementsForTap, type CutPlacement, type CutShape } from './cut';
+import { getMaxFoldCount } from './fold';
 
 export type ShellPhase =
   | 'idle'

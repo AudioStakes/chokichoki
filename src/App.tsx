@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Palette, Volume2 } from 'lucide-react';
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import {
   completeFoldAnimation,
   createShellState,
   getVisibleControls,
   pressFoldButton,
+  type ShellState,
   selectShape,
   tapPaper,
-  type ShellState,
 } from './shell';
 
 function FoldIcon() {

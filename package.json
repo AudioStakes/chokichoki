@@ -7,10 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "lint": "biome lint .",
-    "verify": "npm run format && npm run lint && npm test",
+    "check": "biome check .",
+    "fix": "biome check --write .",
+    "verify": "npm run fix && npm test",
     "test": "vitest run"
   },
   "dependencies": {
