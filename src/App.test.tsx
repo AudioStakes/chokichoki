@@ -21,6 +21,69 @@ describe('App shell', () => {
     expect(container.textContent?.trim()).toBe('');
   });
 
+  it('opens the color palette and hides the other controls', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'color' }));
+
+    expect(screen.queryByRole('button', { name: 'fold' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'sound' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'red' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'sky' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'yellow' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'green' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'pink' })).toBeInTheDocument();
+  });
+
+  it('closes the color palette when the paper is tapped', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'color' }));
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 200,
+      clientY: 200,
+    });
+
+    expect(screen.getByRole('button', { name: 'fold' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'color' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'sound' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'red' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the chosen paper color after creating a new paper', () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'color' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pink' }));
+
+    expect(container.querySelector('.paper')).toHaveAttribute('data-color', 'pink');
+
+    fireEvent.click(screen.getByRole('button', { name: 'fold' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.pointerDown(screen.getByLabelText('paper stage'), {
+      clientX: 210,
+      clientY: 180,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'new paper' }));
+
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    expect(container.querySelector('.paper')).toHaveAttribute('data-color', 'pink');
+  });
+
   it('hides controls while folding and restores them after the animation completes', () => {
     render(<App />);
 

@@ -6,10 +6,12 @@ import {
   completeUnfoldAnimation,
   createShellState,
   getVisibleControls,
+  openColorPalette,
   pressFoldButton,
   pressNewPaperButton,
   pressOpenButton,
   type ShellState,
+  selectPaperColor,
   selectShape,
   tapPaper,
 } from './shell';
@@ -115,6 +117,8 @@ function ShapeIcon({ shape }: { shape: 'circle' | 'triangle' | 'square' | 'heart
   return <span className="shape-icon shape-icon-star" aria-hidden="true" />;
 }
 
+const PAPER_COLORS = ['red', 'sky', 'yellow', 'green', 'pink'] as const;
+
 export default function App() {
   const [shell, setShell] = useState<ShellState>(() => createShellState());
   const foldTimerRef = useRef<number | null>(null);
@@ -138,6 +142,11 @@ export default function App() {
   }, []);
 
   function handlePaperPointerDown(event: ReactPointerEvent<HTMLElement>) {
+    if (shell.phase === 'palette') {
+      setShell((current) => selectPaperColor(current, current.paperColor));
+      return;
+    }
+
     if (!visible.allowPaperTap || !paperShellRef.current) {
       return;
     }
@@ -158,7 +167,12 @@ export default function App() {
         aria-hidden={!visible.showColorButton && !visible.showSoundButton}
       >
         {visible.showColorButton ? (
-          <IconButton label="color" onClick={() => {}}>
+          <IconButton
+            label="color"
+            onClick={() => {
+              setShell((current) => openColorPalette(current));
+            }}
+          >
             <Palette size={22} />
           </IconButton>
         ) : null}
@@ -177,7 +191,12 @@ export default function App() {
       >
         <div className="paper-shell" ref={paperShellRef}>
           {shell.phase === 'folding' ? <div className="fold-cue" aria-hidden="true" /> : null}
-          <div className="paper" aria-hidden="true" data-phase={shell.phase} />
+          <div
+            className="paper"
+            aria-hidden="true"
+            data-phase={shell.phase}
+            data-color={shell.paperColor}
+          />
           {shell.cuts.map((cut) => (
             <div
               key={cut.id}
@@ -194,6 +213,24 @@ export default function App() {
       </main>
 
       <footer className="bottom-bar">
+        {visible.showPalette ? (
+          <fieldset className="color-row" aria-label="color palette">
+            {PAPER_COLORS.map((paperColor) => (
+              <button
+                key={paperColor}
+                type="button"
+                aria-label={paperColor}
+                className="color-button"
+                data-color={paperColor}
+                onClick={() => {
+                  setShell((current) => selectPaperColor(current, paperColor));
+                }}
+              >
+                <span className="color-swatch" aria-hidden="true" data-color={paperColor} />
+              </button>
+            ))}
+          </fieldset>
+        ) : null}
         {visible.showShapeRow ? (
           <fieldset className="shape-row">
             {(['circle', 'triangle', 'square', 'heart', 'star'] as const).map((shape) => (

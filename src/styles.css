@@ -60,6 +60,26 @@ button {
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
+.paper[data-color="red"] {
+  background: linear-gradient(145deg, #ff9aa2 0%, #f97373 100%);
+}
+
+.paper[data-color="sky"] {
+  background: linear-gradient(145deg, #8dd9f6 0%, #6dc7ea 100%);
+}
+
+.paper[data-color="yellow"] {
+  background: linear-gradient(145deg, #ffe28a 0%, #f7c948 100%);
+}
+
+.paper[data-color="green"] {
+  background: linear-gradient(145deg, #9be7b0 0%, #63c98c 100%);
+}
+
+.paper[data-color="pink"] {
+  background: linear-gradient(145deg, #f8b4d9 0%, #eb7fb7 100%);
+}
+
 .cut-hole {
   position: absolute;
   width: 38px;
@@ -95,6 +115,14 @@ button {
   gap: 10px;
   align-items: center;
   justify-content: center;
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .shape-button {
@@ -151,6 +179,43 @@ button {
     2% 35%,
     39% 35%
   );
+}
+
+.color-button {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.color-swatch[data-color="red"] {
+  background: #f97373;
+}
+
+.color-swatch[data-color="sky"] {
+  background: #6dc7ea;
+}
+
+.color-swatch[data-color="yellow"] {
+  background: #f7c948;
+}
+
+.color-swatch[data-color="green"] {
+  background: #63c98c;
+}
+
+.color-swatch[data-color="pink"] {
+  background: #eb7fb7;
 }
 
 .icon-button {

@@ -5,9 +5,11 @@ import {
   completeUnfoldAnimation,
   createShellState,
   getVisibleControls,
+  openColorPalette,
   pressFoldButton,
   pressNewPaperButton,
   pressOpenButton,
+  selectPaperColor,
   tapPaper,
 } from './shell';
 
@@ -16,6 +18,7 @@ describe('shell state', () => {
     const state = createShellState();
 
     expect(state.phase).toBe('idle');
+    expect(state.paperColor).toBe('sky');
     expect(getVisibleControls(state)).toEqual({
       showFoldButton: true,
       showColorButton: true,
@@ -25,6 +28,48 @@ describe('shell state', () => {
       showNewPaperButton: false,
       showPalette: false,
       allowPaperTap: false,
+    });
+  });
+
+  it('opens the color palette without changing the paper color', () => {
+    const paletteOpen = openColorPalette(createShellState());
+
+    expect(paletteOpen.phase).toBe('palette');
+    expect(paletteOpen.paperColor).toBe('sky');
+    expect(getVisibleControls(paletteOpen)).toEqual({
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: true,
+      allowPaperTap: false,
+    });
+  });
+
+  it('keeps the selected paper color when picking a new color', () => {
+    const colorChanged = selectPaperColor(openColorPalette(createShellState()), 'pink');
+
+    expect(colorChanged.paperColor).toBe('pink');
+    expect(colorChanged.phase).toBe('idle');
+  });
+
+  it('keeps the selected paper color after resetting to a new paper', () => {
+    const colorChanged = selectPaperColor(openColorPalette(createShellState()), 'green');
+    const folded = completeFoldAnimation(pressFoldButton(colorChanged));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+    const completed = completeUnfoldAnimation(pressOpenButton(cutState));
+    const resetting = pressNewPaperButton(completed);
+    const idle = completeResetAnimation(resetting);
+
+    expect(idle.paperColor).toBe('green');
+    expect(idle).toMatchObject({
+      phase: 'idle',
+      foldCount: 0,
+      selectedShape: 'circle',
+      cuts: [],
+      paletteReturnPhase: 'idle',
     });
   });
 

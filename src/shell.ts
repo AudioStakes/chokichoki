@@ -11,11 +11,15 @@ export type ShellPhase =
   | 'palette'
   | 'resetting';
 
+export type PaperColor = 'sky' | 'red' | 'yellow' | 'green' | 'pink';
+
 export interface ShellState {
   phase: ShellPhase;
   foldCount: number;
   selectedShape: CutShape;
   cuts: CutPlacement[];
+  paperColor: PaperColor;
+  paletteReturnPhase: Exclude<ShellPhase, 'palette'>;
 }
 
 export interface VisibleControls {
@@ -30,10 +34,30 @@ export interface VisibleControls {
 }
 
 export function createShellState(): ShellState {
-  return { phase: 'idle', foldCount: 0, selectedShape: 'circle', cuts: [] };
+  return {
+    phase: 'idle',
+    foldCount: 0,
+    selectedShape: 'circle',
+    cuts: [],
+    paperColor: 'sky',
+    paletteReturnPhase: 'idle',
+  };
 }
 
 export function getVisibleControls(state: ShellState): VisibleControls {
+  if (state.phase === 'palette') {
+    return {
+      showFoldButton: false,
+      showColorButton: false,
+      showSoundButton: false,
+      showShapeRow: false,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: true,
+      allowPaperTap: false,
+    };
+  }
+
   if (state.phase === 'idle' || state.phase === 'folded' || state.phase === 'cutting') {
     return {
       showFoldButton: state.foldCount < getMaxFoldCount() && state.cuts.length === 0,
@@ -94,17 +118,43 @@ export function completeFoldAnimation(state: ShellState): ShellState {
 }
 
 export function selectShape(state: ShellState, selectedShape: CutShape): ShellState {
-  if (state.phase === 'folding' || state.phase === 'unfolding' || state.phase === 'resetting') {
+  if (
+    state.phase === 'folding' ||
+    state.phase === 'unfolding' ||
+    state.phase === 'resetting' ||
+    state.phase === 'palette'
+  ) {
     return state;
   }
 
   return { ...state, selectedShape };
 }
 
+export function openColorPalette(state: ShellState): ShellState {
+  if (state.phase === 'folding' || state.phase === 'unfolding' || state.phase === 'resetting') {
+    return state;
+  }
+
+  return { ...state, phase: 'palette', paletteReturnPhase: state.phase };
+}
+
+export function selectPaperColor(state: ShellState, paperColor: PaperColor): ShellState {
+  if (state.phase !== 'palette') {
+    return state;
+  }
+
+  return {
+    ...state,
+    phase: state.paletteReturnPhase,
+    paperColor,
+  };
+}
+
 export function tapPaper(state: ShellState, tap: { x: number; y: number }): ShellState {
   if (
     state.foldCount <= 0 ||
     state.phase === 'completed' ||
+    state.phase === 'palette' ||
     state.phase === 'folding' ||
     state.phase === 'unfolding' ||
     state.phase === 'resetting'
@@ -152,5 +202,5 @@ export function completeResetAnimation(state: ShellState): ShellState {
     return state;
   }
 
-  return createShellState();
+  return { ...createShellState(), paperColor: state.paperColor };
 }
