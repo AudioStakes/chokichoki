@@ -1,4 +1,5 @@
 import { getMaxFoldCount } from './fold';
+import { appendCuts, buildCutPlacementsForTap, type CutPlacement, type CutShape } from './cut';
 
 export type ShellPhase =
   | 'idle'
@@ -13,6 +14,8 @@ export type ShellPhase =
 export interface ShellState {
   phase: ShellPhase;
   foldCount: number;
+  selectedShape: CutShape;
+  cuts: CutPlacement[];
 }
 
 export interface VisibleControls {
@@ -27,20 +30,20 @@ export interface VisibleControls {
 }
 
 export function createShellState(): ShellState {
-  return { phase: 'idle', foldCount: 0 };
+  return { phase: 'idle', foldCount: 0, selectedShape: 'circle', cuts: [] };
 }
 
 export function getVisibleControls(state: ShellState): VisibleControls {
-  if (state.phase === 'idle' || state.phase === 'folded') {
+  if (state.phase === 'idle' || state.phase === 'folded' || state.phase === 'cutting') {
     return {
-      showFoldButton: state.foldCount < getMaxFoldCount(),
+      showFoldButton: state.foldCount < getMaxFoldCount() && state.cuts.length === 0,
       showColorButton: true,
       showSoundButton: true,
-      showShapeRow: false,
+      showShapeRow: state.foldCount > 0,
       showOpenButton: false,
       showNewPaperButton: false,
       showPalette: false,
-      allowPaperTap: false,
+      allowPaperTap: state.foldCount > 0,
     };
   }
 
@@ -75,4 +78,33 @@ export function completeFoldAnimation(state: ShellState): ShellState {
   const foldCount = Math.min(getMaxFoldCount(), state.foldCount + 1);
 
   return { ...state, phase: 'folded', foldCount };
+}
+
+export function selectShape(state: ShellState, selectedShape: CutShape): ShellState {
+  if (state.phase === 'folding' || state.phase === 'unfolding' || state.phase === 'resetting') {
+    return state;
+  }
+
+  return { ...state, selectedShape };
+}
+
+export function tapPaper(state: ShellState, tap: { x: number; y: number }): ShellState {
+  if (
+    state.foldCount <= 0 ||
+    state.phase === 'folding' ||
+    state.phase === 'unfolding' ||
+    state.phase === 'resetting'
+  ) {
+    return state;
+  }
+
+  const placements = buildCutPlacementsForTap(
+    tap,
+    state.foldCount,
+    state.selectedShape,
+    state.cuts.length,
+  );
+  const cuts = appendCuts(state.cuts, placements);
+
+  return { ...state, phase: 'cutting', cuts };
 }

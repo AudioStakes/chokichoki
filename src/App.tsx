@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Palette, Volume2 } from 'lucide-react';
 import {
   completeFoldAnimation,
   createShellState,
   getVisibleControls,
   pressFoldButton,
+  selectShape,
+  tapPaper,
   type ShellState,
 } from './shell';
 
@@ -45,10 +47,41 @@ function IconButton({
   );
 }
 
+function ShapeIcon({ shape }: { shape: 'circle' | 'triangle' | 'square' | 'heart' | 'star' }) {
+  if (shape === 'circle') {
+    return <span className="shape-icon shape-icon-circle" aria-hidden="true" />;
+  }
+
+  if (shape === 'triangle') {
+    return <span className="shape-icon shape-icon-triangle" aria-hidden="true" />;
+  }
+
+  if (shape === 'square') {
+    return <span className="shape-icon shape-icon-square" aria-hidden="true" />;
+  }
+
+  if (shape === 'heart') {
+    return <span className="shape-icon shape-icon-heart" aria-hidden="true" />;
+  }
+
+  return <span className="shape-icon shape-icon-star" aria-hidden="true" />;
+}
+
 export default function App() {
   const [shell, setShell] = useState<ShellState>(() => createShellState());
   const foldTimerRef = useRef<number | null>(null);
+  const paperShellRef = useRef<HTMLDivElement | null>(null);
   const visible = getVisibleControls(shell);
+  const showShapeRow =
+    shell.foldCount > 0 &&
+    shell.phase !== 'folding' &&
+    shell.phase !== 'unfolding' &&
+    shell.phase !== 'resetting';
+  const allowPaperTap =
+    shell.foldCount > 0 &&
+    shell.phase !== 'folding' &&
+    shell.phase !== 'unfolding' &&
+    shell.phase !== 'resetting';
 
   useEffect(() => {
     return () => {
@@ -57,6 +90,20 @@ export default function App() {
       }
     };
   }, []);
+
+  function handlePaperPointerDown(event: ReactPointerEvent<HTMLElement>) {
+    if (!allowPaperTap || !paperShellRef.current) {
+      return;
+    }
+
+    const rect = paperShellRef.current.getBoundingClientRect();
+    const tap = {
+      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+    };
+
+    setShell((current) => tapPaper(current, tap));
+  }
 
   return (
     <div className="app-shell">
@@ -76,14 +123,49 @@ export default function App() {
         ) : null}
       </header>
 
-      <main className="stage" aria-label="paper stage" aria-busy={shell.phase === 'folding'}>
-        <div className="paper-shell">
+      <main
+        className="stage"
+        aria-label="paper stage"
+        aria-busy={shell.phase === 'folding'}
+        onPointerDown={handlePaperPointerDown}
+      >
+        <div className="paper-shell" ref={paperShellRef}>
           {shell.phase === 'folding' ? <div className="fold-cue" aria-hidden="true" /> : null}
           <div className="paper" aria-hidden="true" data-phase={shell.phase} />
+          {shell.cuts.map((cut) => (
+            <div
+              key={cut.id}
+              className="cut-hole"
+              data-testid="cut-hole"
+              aria-hidden="true"
+              style={{
+                left: `${cut.x * 100}%`,
+                top: `${cut.y * 100}%`,
+              }}
+            />
+          ))}
         </div>
       </main>
 
       <footer className="bottom-bar">
+        {showShapeRow ? (
+          <fieldset className="shape-row">
+            {(['circle', 'triangle', 'square', 'heart', 'star'] as const).map((shape) => (
+              <button
+                key={shape}
+                type="button"
+                aria-label={shape}
+                aria-pressed={shell.selectedShape === shape}
+                className="shape-button"
+                onClick={() => {
+                  setShell((current) => selectShape(current, shape));
+                }}
+              >
+                <ShapeIcon shape={shape} />
+              </button>
+            ))}
+          </fieldset>
+        ) : null}
         {visible.showFoldButton ? (
           <IconButton
             label="fold"

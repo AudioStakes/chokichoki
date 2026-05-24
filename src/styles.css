@@ -60,6 +60,17 @@ button {
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
+.cut-hole {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  margin-left: -19px;
+  margin-top: -19px;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.66);
+}
+
 .fold-cue {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -76,6 +87,70 @@ button {
   display: grid;
   place-items: center;
   min-height: 96px;
+  gap: 14px;
+}
+
+.shape-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.shape-button {
+  display: inline-grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: #334155;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+}
+
+.shape-button[aria-pressed="true"] {
+  transform: scale(1.12);
+}
+
+.shape-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+}
+
+.shape-icon-circle {
+  border-radius: 999px;
+}
+
+.shape-icon-square {
+  border-radius: 5px;
+}
+
+.shape-icon-triangle {
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+.shape-icon-heart {
+  clip-path: path(
+    "M11 19.2C4.6 14.6 0 11.2 0 6.6 0 3 2.8 0 6.4 0c2 0 3.7.9 4.6 2.4C11.9.9 13.6 0 15.6 0 19.2 0 22 3 22 6.6c0 4.6-4.6 8-11 12.6Z"
+  );
+}
+
+.shape-icon-star {
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 92%,
+    50% 71%,
+    21% 92%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
 }
 
 .icon-button {

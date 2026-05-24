@@ -4,6 +4,7 @@ import {
   createShellState,
   getVisibleControls,
   pressFoldButton,
+  tapPaper,
 } from './shell';
 
 describe('shell state', () => {
@@ -49,11 +50,11 @@ describe('shell state', () => {
       showFoldButton: true,
       showColorButton: true,
       showSoundButton: true,
-      showShapeRow: false,
+      showShapeRow: true,
       showOpenButton: false,
       showNewPaperButton: false,
       showPalette: false,
-      allowPaperTap: false,
+      allowPaperTap: true,
     });
   });
 
@@ -67,11 +68,47 @@ describe('shell state', () => {
       showFoldButton: false,
       showColorButton: true,
       showSoundButton: true,
-      showShapeRow: false,
+      showShapeRow: true,
       showOpenButton: false,
       showNewPaperButton: false,
       showPalette: false,
-      allowPaperTap: false,
+      allowPaperTap: true,
+    });
+  });
+
+  it('starts with circle selected and shows shape buttons after folding', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+
+    expect(folded.selectedShape).toBe('circle');
+    expect(getVisibleControls(folded)).toEqual({
+      showFoldButton: true,
+      showColorButton: true,
+      showSoundButton: true,
+      showShapeRow: true,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: false,
+      allowPaperTap: true,
+    });
+  });
+
+  it('adds cuts for every folded layer when the paper is tapped', () => {
+    const folded = completeFoldAnimation(pressFoldButton(createShellState()));
+    const cutState = tapPaper(folded, { x: 0.2, y: 0.3 });
+
+    expect(cutState.phase).toBe('cutting');
+    expect(cutState.cuts).toHaveLength(2);
+    expect(cutState.cuts[0]).toMatchObject({ shape: 'circle', x: 0.6, y: 0.3 });
+    expect(cutState.cuts[1]).toMatchObject({ shape: 'circle', x: 0.4, y: 0.3 });
+    expect(getVisibleControls(cutState)).toEqual({
+      showFoldButton: false,
+      showColorButton: true,
+      showSoundButton: true,
+      showShapeRow: true,
+      showOpenButton: false,
+      showNewPaperButton: false,
+      showPalette: false,
+      allowPaperTap: true,
     });
   });
 });
