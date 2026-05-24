@@ -8,6 +8,7 @@ coverage/
 # TypeScript / Vite caches
 *.tsbuildinfo
 .vite/
+.turbo/
 
 # Environment files
 .env
