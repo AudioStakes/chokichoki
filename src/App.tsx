@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Palette, Volume2 } from 'lucide-react';
-import { createShellState, getVisibleControls, pressFoldButton, type ShellState } from './shell';
+import {
+  completeFoldAnimation,
+  createShellState,
+  getVisibleControls,
+  pressFoldButton,
+  type ShellState,
+} from './shell';
 
 function FoldIcon() {
   return (
@@ -41,7 +47,16 @@ function IconButton({
 
 export default function App() {
   const [shell, setShell] = useState<ShellState>(() => createShellState());
+  const foldTimerRef = useRef<number | null>(null);
   const visible = getVisibleControls(shell);
+
+  useEffect(() => {
+    return () => {
+      if (foldTimerRef.current != null) {
+        window.clearTimeout(foldTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="app-shell">
@@ -61,8 +76,11 @@ export default function App() {
         ) : null}
       </header>
 
-      <main className="stage" aria-label="paper stage">
-        <div className="paper" aria-hidden="true" />
+      <main className="stage" aria-label="paper stage" aria-busy={shell.phase === 'folding'}>
+        <div className="paper-shell">
+          {shell.phase === 'folding' ? <div className="fold-cue" aria-hidden="true" /> : null}
+          <div className="paper" aria-hidden="true" data-phase={shell.phase} />
+        </div>
       </main>
 
       <footer className="bottom-bar">
@@ -70,7 +88,16 @@ export default function App() {
           <IconButton
             label="fold"
             onClick={() => {
-              setShell(pressFoldButton(shell));
+              if (foldTimerRef.current != null) {
+                window.clearTimeout(foldTimerRef.current);
+              }
+
+              setShell((current) => pressFoldButton(current));
+
+              foldTimerRef.current = window.setTimeout(() => {
+                setShell((current) => completeFoldAnimation(current));
+                foldTimerRef.current = null;
+              }, 1200);
             }}
           >
             <FoldIcon />

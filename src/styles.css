@@ -44,6 +44,12 @@ button {
   place-items: center;
 }
 
+.paper-shell {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
 .paper {
   width: min(78vw, 320px);
   aspect-ratio: 1;
@@ -52,6 +58,18 @@ button {
   box-shadow:
     0 24px 40px rgba(15, 23, 42, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.fold-cue {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(78vw, 320px);
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.98), transparent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.72);
+  animation: fold-cue-flash 0.45s ease-out forwards;
 }
 
 .bottom-bar {
@@ -70,4 +88,18 @@ button {
   background: white;
   color: #334155;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+}
+
+@keyframes fold-cue-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(0.4);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
 }

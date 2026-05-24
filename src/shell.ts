@@ -1,3 +1,5 @@
+import { getMaxFoldCount } from './fold';
+
 export type ShellPhase =
   | 'idle'
   | 'folding'
@@ -10,6 +12,7 @@ export type ShellPhase =
 
 export interface ShellState {
   phase: ShellPhase;
+  foldCount: number;
 }
 
 export interface VisibleControls {
@@ -24,13 +27,13 @@ export interface VisibleControls {
 }
 
 export function createShellState(): ShellState {
-  return { phase: 'idle' };
+  return { phase: 'idle', foldCount: 0 };
 }
 
 export function getVisibleControls(state: ShellState): VisibleControls {
-  if (state.phase === 'idle') {
+  if (state.phase === 'idle' || state.phase === 'folded') {
     return {
-      showFoldButton: true,
+      showFoldButton: state.foldCount < getMaxFoldCount(),
       showColorButton: true,
       showSoundButton: true,
       showShapeRow: false,
@@ -54,9 +57,22 @@ export function getVisibleControls(state: ShellState): VisibleControls {
 }
 
 export function pressFoldButton(state: ShellState): ShellState {
-  if (state.phase !== 'idle') {
+  if (
+    (state.phase !== 'idle' && state.phase !== 'folded') ||
+    state.foldCount >= getMaxFoldCount()
+  ) {
     return state;
   }
 
-  return { phase: 'folding' };
+  return { ...state, phase: 'folding' };
+}
+
+export function completeFoldAnimation(state: ShellState): ShellState {
+  if (state.phase !== 'folding') {
+    return state;
+  }
+
+  const foldCount = Math.min(getMaxFoldCount(), state.foldCount + 1);
+
+  return { ...state, phase: 'folded', foldCount };
 }
