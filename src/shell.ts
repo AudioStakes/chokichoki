@@ -1,4 +1,12 @@
-export type ShellPhase = 'idle' | 'folding' | 'folded' | 'cutting' | 'unfolding' | 'completed' | 'palette' | 'resetting';
+export type ShellPhase =
+  | 'idle'
+  | 'folding'
+  | 'folded'
+  | 'cutting'
+  | 'unfolding'
+  | 'completed'
+  | 'palette'
+  | 'resetting';
 
 export interface ShellState {
   phase: ShellPhase;

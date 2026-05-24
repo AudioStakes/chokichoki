@@ -5,8 +5,20 @@ import { createShellState, getVisibleControls, pressFoldButton, type ShellState 
 function FoldIcon() {
   return (
     <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M12 14h28l12 12v24H12z" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M40 14v12h12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
+      <path
+        d="M12 14h28l12 12v24H12z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M40 14v12h12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -33,7 +45,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="top-bar" aria-hidden={!visible.showColorButton && !visible.showSoundButton}>
+      <header
+        className="top-bar"
+        aria-hidden={!visible.showColorButton && !visible.showSoundButton}
+      >
         {visible.showColorButton ? (
           <IconButton label="color" onClick={() => {}}>
             <Palette size={22} />
