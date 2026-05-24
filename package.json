@@ -10,6 +10,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
+    "verify": "npm run format && npm run lint && npm test",
     "test": "vitest run"
   },
   "dependencies": {
